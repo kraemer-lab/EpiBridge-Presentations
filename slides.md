@@ -12,86 +12,150 @@
 
 ---
 
-# The Problem
+# A Familiar Problem
 
 <span />
 
-Your research group holds sensitive data.
+A public health institute holds sensitive patient data.
 
-Your need collaborators to work with it — but you cannot simply send them the data
+A collaborator at another institution has developed an analysis that could advance the research.
 
-How do you enable analysis while maintaining control?
+How can they work together without moving the data?
 
 ---
 
 # How Research Happens Today
 
-<span />
+- **Move the data** — risky, may violate consent or regulation
+- **Build a Trusted Research Environment** — secure, but expensive and slow to stand up
+- **Don't collaborate** — the safest option, but the worst for science
 
-Large institutions provision **Trusted Research Environments (TREs)**: secure facilities where researchers access data through remote desktops and notebooks
-
-TREs provide strong governance but require substantial infrastructure
-
-Many labs and smaller institutions hold governed data but lack large research computing facilities
+EpiBridge offers a fourth option.
 
 ---
 
-# EpiBridge: Locally Deployable
+# Code Moves to the Data
+
+<span />
+
+**The data never leaves the institution.**
+
+The analysis travels to the data — not the other way around.
+
+Execution happens inside the institution's own environment.
+
+Only the results leave, after institutional review.
+
+---
+
+# Locally Deployable
+
+<span />
+
+EpiBridge runs on a single institutional machine.
+
+No cloud infrastructure required. No data centre needed. One server.
+
+**Who is it for?**
+- Any institution with sensitive data
+- Labs collaborating across sites
+- Organisations wanting governance without large infrastructure
+
+---
+
+# Governance Without Complexity
+
+<span />
+
+Three distinct responsibilities:
+
+- **Researcher** — writes and submits analyses
+- **Moderator** — reviews analyses and approves outputs before release
+- **Institution** — controls the data, defines the environment, owns the governance
+
+No roles beyond what a small team needs.
+
+Every step is recorded in the audit ledger. No step bypasses institutional governance.
+
+---
+
+# Architecture Overview
 
 ```mermaid
 %%{init: {'theme': 'neutral', 'themeVariables': { 'lineColor': '#888888', 'primaryTextColor': '#555' }}}%%
 flowchart LR
-  R([Your computer]) --> B[Analysis package]
-  B --> E[Institutional execution]
-  E --> O[Governed output]
+  R[Researcher] --> B[Analysis Bundle]
+  B --> P[EpiBridge Platform]
+  P --> E[Isolated Execution]
+  E --> O[Approved Outputs]
+  O --> R2[Researcher receives results]
+  
+  D[(Institutional Data)] -.-> E
+  G[Moderator] -.-> P
 ```
 
-EpiBridge is a deployable platform that runs on a single machine — no data centre required.
+The platform sits between the researcher and the data.
 
-Institutions install it locally and immediately gain a governed execution pipeline for sensitive data.
+The researcher never accesses the data directly.
+
+The moderator governs every transition.
 
 ---
 
-# What This Means
+# Analysis Bundle
 
 <span />
 
-**For researchers:**
-- Prepare analyses in your usual environment
-- Submit analyses
-- Receive results
+An **Analysis Bundle** is an immutable description of an analysis.
 
-**For institutions:**
-- Governed data stays in your control
-- Every execution is audited
-- Outputs are reviewed before release
+It contains everything needed to reproduce the computation:
+
+- **Code** — the analysis script
+- **Dependencies** — required packages or libraries
+- **Metadata** — entrypoint, interpreter, resource declarations
+
+```text
+analysis.zip
+├── run.py
+├── requirements.txt
+└── README.md
+```
+
+The bundle is submitted for review. It cannot be modified after submission.
 
 ---
 
-# Who Is It For
+# Building the Execution Environment
 
 <span />
 
-Any institution with sensitive data
+When an analysis is approved, the platform:
 
-Labs collaborating across sites
+1. Reads the declared dependencies
+2. Selects the institutional base environment
+3. Builds a dedicated execution image containing the analysis and its dependencies
 
-Organisations wanting governance without large infrastructure
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'lineColor': '#888888', 'primaryTextColor': '#555' }}}%%
+flowchart LR
+  Base[Institutional base image] --> Build[Add declared dependencies]
+  Build --> Image[Execution image]
+```
 
-EpiBridge can run on a single computer
+Once built, the environment is cached. Identical dependencies produce identical images — no rebuild needed.
 
 ---
 
-<div style="max-width:60%;margin:auto">
+# Under the Hood
 
 ```mermaid
 %%{init:{
   "theme":"base",
   "flowchart":{
     "curve":"basis",
-    "nodeSpacing":65,
-    "rankSpacing":80,
-    "padding":20,
+    "nodeSpacing":20,
+    "rankSpacing":20,
+    "padding":10,
     "htmlLabels":true
   },
   "themeVariables":{
@@ -124,7 +188,7 @@ EpiBridge can run on a single computer
   }
 }}%%
 
-flowchart TB
+flowchart LR
 
 subgraph User["Researcher"]
 Rd[Develop Analysis]
@@ -174,161 +238,21 @@ Hd -...-> Cx
 Ra --> Ed
 
 end
-
 ```
 
-</div>
-
 ---
 
-# From the Researcher's Side
-
-- Inspect the institution's data schema, sample datasets and execution environment
-- Write your analysis in R, Python, Stata — your usual tools
-- Specify environment execution requirements
-- Package and submit as an Analysis Bundle
-- Wait for institutional approval / execution
-- Download results when released
-
-You never access the governed data directly
-
----
-
-# From the Moderator's Side
-
-- Review incoming Analysis Bundles
-- Approve or reject submissions
-- Monitor execution
-- Review output results
-- Release approved outputs
-
-The institution governs every step
-
----
-
-# Analysis Bundle
+# Why EpiBridge?
 
 <span />
 
-An Analysis Bundle is an **immutable description of an analysis**.
+**The core idea:** Code moves to the data. The data never leaves the institution.
 
-Typical contents for a Python-based analysis:
+**For researchers:** Use your own tools — R, Python, Stata. Work in your usual environment. Get results after institutional review.
 
-```text
-analysis.zip
-├── run.py
-├── requirements.txt
-└── README.md
-```
+**For institutions:** Retain full control. Every step is audited. One machine, no cloud required.
 
-Typical contents for a Conda-based analysis:
-```text
-analysis.zip
-├── run.sh
-├── environment.yml
-└── README.md
-```
-
----
-
-# Building the Execution Image
-
-<div style="width: 65%; margin:auto;">
-
-```mermaid
-%%{init:{
-  "theme":"base",
-  "flowchart":{
-    "curve":"basis",
-    "nodeSpacing":65,
-    "rankSpacing":80,
-    "padding":20,
-    "htmlLabels":true
-  },
-  "themeVariables":{
-
-    "background":"#ffffff",
-    "mainBkg":"#ffffff",
-
-    "fontFamily":"Inter, Helvetica, Arial",
-    "fontSize":"18px",
-
-    "primaryColor":"#ffffff",
-    "primaryBorderColor":"#475569",
-    "primaryTextColor":"#1e293b",
-
-    "secondaryColor":"#ffffff",
-    "secondaryBorderColor":"#475569",
-    "secondaryTextColor":"#1e293b",
-
-    "tertiaryColor":"#ffffff",
-    "tertiaryBorderColor":"#475569",
-    "tertiaryTextColor":"#1e293b",
-
-    "clusterBkg":"#f8fafc",
-    "clusterBorder":"#94a3b8",
-
-    "lineColor":"#64748b",
-    "defaultLinkColor":"#64748b",
-
-    "edgeLabelBackground":"#ffffff"
-  }
-}}%%
-flowchart LR
-
-Bundle["Analysis Bundle"]
-
-Req["requirements.txt"]
-
-Environment["Execution Environment"]
-
-Image["Execution Image"]
-
-Bundle --> Req
-
-Environment -.->|Institutional base| Image
-
-Req --> Image
-```
-
-</div>
-
-### Institutional Build
-
-The platform uses a curated builder template.
-
-```
-FROM ${BASE_IMAGE}
-
-COPY requirements.txt .
-
-RUN pip install ...
-```
-
-Only the dependency specification influences the image
-
-Once built, the environment can be reused
-
----
-
-# Why this matters
-
-<span />
-
-Researchers describe:
-
-- **what** should be executed
-- **which** dependencies are required
-- optionally **how** the image should be extended
-
-The institution remains responsible for:
-
-- the execution environment
-- execution
-- governance
-- release
-
-This separation preserves reproducibility while allowing controlled flexibility
+**For collaboration:** Secure, governed, reproducible — without moving sensitive data.
 
 ---
 
